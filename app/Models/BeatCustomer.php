@@ -33,10 +33,7 @@ class BeatCustomer extends Model
         'updated_by',
     ];
 
-    public function medicals()
-    {
-        return $this->hasMany(BeatCustomerMedical::class, 'beat_customer_id');
-    }
+   
     public function membershipType()
     {
         return $this->belongsTo(BeatMembership::class, 'membership_id');
@@ -44,6 +41,6 @@ class BeatCustomer extends Model
 
     public function attendanceMonitorings()
     {
-        return $this->hasMany(BeatAttendanceMonitoring::class, 'beat_customer_id');
+        return $this->hasMany(BeatAttendanceMonitoring::class, 'beat_customer_id')->orderBy('created_at');
     }
 }
