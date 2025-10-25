@@ -33,7 +33,6 @@ class BeatAppCustomer extends Controller
             'birthdate' => 'nullable|date',
             'age' => 'nullable|integer|min:0|max:120',
             'address' => 'nullable|string|max:255',
-            'zipcode' => 'nullable|string|max:10',
             'email' => 'required|email|unique:beat_customers,email',
             'phone' => 'nullable|string|max:20',
             'phone2' => 'nullable|string|max:20',

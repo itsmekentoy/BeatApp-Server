@@ -9,8 +9,7 @@ class BeatAttendanceMonitoring extends Model
     protected $fillable = [
         'beat_customer_id',
         'attendance_date',
-        'check_in_time',
-        'check_out_time',
+        'check_in_time'
     ];
 
     public function beatCustomer()
