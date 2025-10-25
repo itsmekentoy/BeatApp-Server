@@ -11,6 +11,7 @@ use App\Http\Controllers\ProductManagementController;
 use App\Http\Controllers\EmailManagementController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\SellingProduct;
+use App\Http\Controllers\DoorAccessController;
 
     
 Route::get('/hello', function (Request $request) {
@@ -65,4 +66,9 @@ Route::controller(UserManagementController::class)->group(function () {
 Route::controller(SellingProduct::class)->group(function () {
     Route::get('/sold-products', 'index');
     Route::post('/sell-product', 'store');
+});
+
+Route::controller(DoorAccessController::class)->group(function () {
+    Route::post('/open-door', 'OpenDoor');
+    Route::get('/search-controller', 'searchController');
 });
