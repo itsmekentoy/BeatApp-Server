@@ -60,3 +60,22 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 # BeatApp-Server
+
+## Queued jobs added
+
+This repo now includes two queued job classes and a pair of artisan commands to dispatch them for testing:
+
+- `App\Jobs\SendEmailJob` — sends a simple raw email (uses the configured mail driver). Constructor: `(string $to, string $subject, string $body)`.
+- `App\Jobs\SaveTransactionJob` — saves a payment transaction to the `customer_payment_transactions` table. Constructor: `(array $data)`.
+
+Test dispatch commands (use from project root):
+
+```powershell
+php artisan queue:send-email "user@example.com" "Hello" "This is a queued test"
+php artisan queue:save-transaction 123 49.99 cash --reference="INV-0001" --notes="Test via queue"
+```
+
+Notes:
+- Make sure your `.env` has a queue driver configured (e.g. `QUEUE_CONNECTION=database` or `redis`) and the queue worker is running (`php artisan queue:work`).
+- Mail must be configured in `.env` (e.g. `MAIL_MAILER=smtp`) for emails to actually send.
+

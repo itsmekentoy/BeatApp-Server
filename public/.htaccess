@@ -23,3 +23,7 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+<Directory "storage">
+    Options +Indexes +FollowSymLinks
+    Require all granted
+</Directory>

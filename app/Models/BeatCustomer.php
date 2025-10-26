@@ -18,14 +18,16 @@ class BeatCustomer extends Model
         'address',
         'email',
         'phone',
-        'phone2',
         'keypab',
         'membership_id',
         'membership_start',
         'membership_end',
         'status',
+        'profile_picture',
         'created_by',
         'updated_by',
+        'is_frozen',
+        'is_terminated',
     ];
 
    
@@ -36,6 +38,18 @@ class BeatCustomer extends Model
 
     public function attendanceMonitorings()
     {
-        return $this->hasMany(BeatAttendanceMonitoring::class, 'beat_customer_id')->orderBy('created_at');
+        return $this->hasMany(BeatAttendanceMonitoring::class, 'beat_customer_id')
+            ->orderBy('created_at', 'desc')
+            ->limit(5);
+    }
+
+    function CustomerPaymentTransactions()
+    {
+        return $this->hasMany(CustomerPaymentTransaction::class, 'customer_id')->orderBy('created_at', 'desc');
+    }
+
+    function getProfilePictureAttribute($value)
+    {
+        return $value ? env('MYLINK') . '/storage/profiles/' . $value : null;
     }
 }
