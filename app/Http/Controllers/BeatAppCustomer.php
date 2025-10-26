@@ -218,7 +218,7 @@ class BeatAppCustomer extends Controller
         $membershipTypeDetails = BeatMembership::find($membershipType)->name;
         // kent
         $DataForSaving =[
-            "card_number" => $beatCustomer->keypab,
+            "card_number" => (int)$beatCustomer->keypab,
             "start_date" => $beatCustomer->membership_end,
             "end_date" => $request->new_expiration_date,
         ];
@@ -235,12 +235,14 @@ class BeatAppCustomer extends Controller
             "payment_method" => $request->payment_method,
         ];
 
-        // Dispatch job to save transaction (asynchronously — don't wait for it to finish)
-        // This will enqueue the job and return immediately; run a queue worker to process jobs.
-        SaveTransactionJob::dispatch($DataForSaving);
+        $this->addAndActivatePrivilege($beatCustomer->keypab, $beatCustomer->membership_start, $beatCustomer->membership_end);
 
-        // // Dispatch job to send email
-        // SendEmailJob::dispatchSync($dataForEmail);
+        // // Dispatch job to save transaction (asynchronously — don't wait for it to finish)
+        // // This will enqueue the job and return immediately; run a queue worker to process jobs.
+        // SaveTransactionJob::dispatch($DataForSaving);
+
+        // // // Dispatch job to send email
+        // // SendEmailJob::dispatchSync($dataForEmail);
 
 
 
@@ -340,5 +342,174 @@ class BeatAppCustomer extends Controller
             'success' => true,
             'message' => 'Attendance monitoring started for keyfob: ' . $keypab
         ], 200);
+    }
+    private function toBcdByte(int $v): int
+    {
+        // integer division and remainder; produce single byte value
+        $tens = intdiv($v, 10);
+        $ones = $v % 10;
+        return ($tens << 4) | $ones;
+    }
+    private function addAndActivatePrivilege($cardNumber, $startDate, $endDate)
+    {
+        $ip = env('IP_DOOR_CONTROLLER', '192.168.1.10');
+        $controllerIp = $ip;
+        $port = env('DATASERVERPORT', 6000);
+        $sn = env('SN_DOOR_CONTROLLER', 12345678);
+        $cardNo = $cardNumber;
+
+        $start = Carbon::parse($startDate)->startOfDay();
+        $end = Carbon::parse($endDate)->startOfDay();
+        Log::info('Adding and activating privilege for card number: ' . $cardNo . ' from ' . $start->toDateString() . ' to ' . $end->toDateString());
+
+        // --- Build Add/Edit Privilege packet (0x50), 64 bytes ---
+        $packet = str_repeat("\x00", 64);
+        $packet[0] = chr(0x17); // Type
+        $packet[1] = chr(0x50); // Function ID: Add/Edit Privilege
+
+        // Controller SN (little endian, 4 bytes)
+        $packet = substr_replace($packet, pack('V', $sn), 4, 4);
+
+        // Card number (low 4 bytes little-endian) at offset 8
+        $packet = substr_replace($packet, pack('V', $cardNo), 8, 4);
+
+        // Card high 4 bytes at offset 44 — per WG sample, set to 0
+        $packet = substr_replace($packet, pack('V', 0), 44, 4);
+
+        // Start date bytes at offsets 12..15 — WG sample uses (century, year, month, day) in single bytes
+        $packet[12] = chr($this->toBcdByte(intdiv((int)$start->year, 100))); // e.g. 20
+        $packet[13] = chr($this->toBcdByte((int)$start->format('y')));       // e.g. 25
+        $packet[14] = chr($this->toBcdByte((int)$start->month));
+        $packet[15] = chr($this->toBcdByte((int)$start->day));
+
+        // End date bytes at offsets 16..19
+        $packet[16] = chr($this->toBcdByte(intdiv((int)$end->year, 100)));
+        $packet[17] = chr($this->toBcdByte((int)$end->format('y')));
+        $packet[18] = chr($this->toBcdByte((int)$end->month));
+        $packet[19] = chr($this->toBcdByte((int)$end->day));
+
+        // Door privileges (2-door controller): offsets 20 & 21 -> allow (0x01)
+        // Offsets 22 & 23 (doors 3/4) -> zero (disabled)
+        $packet[20] = chr(0x01); // Door 1 allow
+        $packet[21] = chr(0x01); // Door 2 allow
+        $packet[22] = chr(0x00); // Door 3 disallow
+        $packet[23] = chr(0x00); // Door 4 disallow
+
+        // Password 3-bytes (offsets 24..26), leave 0
+        $packet[24] = chr(0x00);
+        $packet[25] = chr(0x00);
+        $packet[26] = chr(0x00);
+
+        // Deactivation hour/minute - offsets 30..31 (optional)
+        $packet[30] = chr(23); // 23h
+        $packet[31] = chr(59); // 59m
+
+        // Sequence ID (big-endian) at 40..43
+        $seq = random_int(1, 0xFFFFFFFF);
+        $packet = substr_replace($packet, pack('N', $seq), 40, 4);
+
+        // Send 0x50
+        $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+        socket_set_option($sock, SOL_SOCKET, SO_BROADCAST, 1);
+        socket_sendto($sock, $packet, strlen($packet), 0, $ip, $port);
+
+        // Wait for response (2s)
+        socket_set_option($sock, SOL_SOCKET, SO_RCVTIMEO, ['sec' => 2, 'usec' => 0]);
+        $buf = '';
+        $from = '';
+        $portOut = 0;
+        $bytes = @socket_recvfrom($sock, $buf, 1024, 0, $from, $portOut);
+
+        if ($bytes === false) {
+            socket_close($sock);
+            return response()->json([
+                'status' => 'timeout',
+                'message' => 'No response from controller to 0x50 (add privilege)'
+            ], 408);
+        }
+
+        $respHex = bin2hex($buf);
+        $resultByte = ord($buf[8] ?? "\x00");
+
+        // If controller accepted (byte[8] == 1), then trigger upload/activate (0x56)
+       if ($resultByte === 1) {
+            // === Build and send 0x56 Activate Privilege ===
+            $packet56 = str_repeat("\x00", 64);
+            $packet56[0] = chr(0x17); // Type
+            $packet56[1] = chr(0x56); // Function ID: Upload/Activate Privilege
+            $packet56 = substr_replace($packet56, pack('V', $sn), 4, 4); // SN (little-endian)
+
+            // Door count (byte 8): 2 doors in your controller
+            $packet56[8] = chr(0x02);
+
+            // Record count (bytes 9–10): 1 record (low byte first)
+            $packet56[9] = chr(0x01);
+            $packet56[10] = chr(0x00);
+
+            // Sequence ID (bytes 40–43): random big-endian 4 bytes
+            $seq2 = random_int(1, 0xFFFFFFFF);
+            $packet56 = substr_replace($packet56, pack('N', $seq2), 40, 4);
+
+            // Send 0x56 command
+            socket_sendto($sock, $packet56, strlen($packet56), 0, $controllerIp, $port);
+
+            // Wait for reply (timeout: 2s)
+            socket_set_option($sock, SOL_SOCKET, SO_RCVTIMEO, ['sec' => 2, 'usec' => 0]);
+            $buf56 = '';
+            $from56 = '';
+            $port56 = 0;
+            $bytes56 = @socket_recvfrom($sock, $buf56, 1024, 0, $from56, $port56);
+
+            socket_close($sock);
+
+            if ($bytes56 === false) {
+                return response()->json([
+                    'status' => 'partial',
+                    'message' => '0x50 accepted but no reply to 0x56 (activation). Check controller logs.',
+                    'response_hex_0x50' => $respHex
+                ]);
+            }
+
+            $resp56Hex = bin2hex($buf56);
+            $res56 = ord($buf56[8] ?? "\x00");
+
+            if ($res56 !== 1) {
+                Log::warning('Controller ignored 0x56 activation but card is active', [
+                    'card_number' => $cardNo,
+                    'response_hex_0x50' => $respHex,
+                    'response_hex_0x56' => $resp56Hex,
+                ]);
+                return true;
+                // return response()->json([
+                //     'status' => 'success',
+                //     'message' => 'Privilege added. Controller ignored 0x56 but card is active (normal for some firmwares).',
+                //     'card_number' => $cardNo,
+                //     'response_hex_0x50' => $respHex,
+                //     'response_hex_0x56' => $resp56Hex,
+                // ]);
+            }else{
+                Log::info('Privilege added and activated successfully', [
+                    'card_number' => $cardNo,
+                    'response_hex_0x50' => $respHex,
+                    'response_hex_0x56' => $resp56Hex,
+                ]);
+                return true;
+                // return response()->json([
+                //     'status' => 'success',
+                //     'message' => 'Privilege added and activated successfully.',
+                //     'card_number' => $cardNo,
+                //     'response_hex_0x50' => $respHex,
+                //     'response_hex_0x56' => $resp56Hex,
+                // ]);
+            }
+        } else {
+            socket_close($sock);
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Controller rejected the add privilege command (0x50).',
+                'response_hex' => $respHex,
+            ], 400);
+        }
+
     }
 }
