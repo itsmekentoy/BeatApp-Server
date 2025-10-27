@@ -30,7 +30,7 @@ Route::delete('/customer/delete/{id}', [BeatAppCustomer::class, 'destroy']);
 Route::post('/customer/payment', [BeatAppCustomer::class, 'addPaymentTransaction']);
 Route::post('/customer/freeze/{id}', [BeatAppCustomer::class, 'freezeMembership']);
 Route::get('/customer/unfreeze/{id}', [BeatAppCustomer::class, 'unfreezeMembership']);
-Route::post('/customer/terminate/{id}', [BeatAppCustomer::class, 'terminateMembership']);
+Route::get('/customer/terminate/{id}', [BeatAppCustomer::class, 'terminateMembership']);
 Route::get('/customer/attendance-monitoring/{keypab}/checkin', [BeatAppCustomer::class, 'attendanceMonitoring']);
 
 

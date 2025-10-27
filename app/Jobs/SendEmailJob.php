@@ -7,9 +7,8 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Mail\Message;
+use App\Helpers\MailHelper;
 
 class SendEmailJob implements ShouldQueue
 {
@@ -18,42 +17,41 @@ class SendEmailJob implements ShouldQueue
     public $to;
     public $subject;
     public $body;
+    public $attachments;
 
     /**
      * Create a new job instance.
-     *
-     * @return void
      */
     public function __construct($to, $subject, $body)
     {
         $this->to = $to;
         $this->subject = $subject;
         $this->body = $body;
+       
     }
 
     /**
      * Execute the job.
-     *
-     * @return void
      */
     public function handle()
     {
         try {
-            Mail::raw($this->body, function (Message $message) {
-                $message->to($this->to)
-                    ->subject($this->subject);
-            });
+            $sent = MailHelper::sendMail(
+                $this->to,
+                $this->subject,
+                $this->body,
+                
+            );
 
-            Log::info('SendEmailJob: email queued/sent to ' . $this->to, [
-                'subject' => $this->subject,
-            ]);
+            if ($sent) {
+                Log::info("SendEmailJob: Email successfully sent to {$this->to}");
+            } else {
+                Log::warning("SendEmailJob: Failed to send email to {$this->to}");
+            }
+
         } catch (\Throwable $e) {
-            Log::error('SendEmailJob failed: ' . $e->getMessage(), [
-                'to' => $this->to,
-                'subject' => $this->subject,
-            ]);
-            // rethrow to allow retry/backoff per queue config
-            throw $e;
+            Log::error('SendEmailJob Error: ' . $e->getMessage());
+            throw $e; // allows Laravel queue retry/backoff to handle failure
         }
     }
 }

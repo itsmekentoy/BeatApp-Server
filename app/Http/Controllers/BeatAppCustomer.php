@@ -174,7 +174,7 @@ class BeatAppCustomer extends Controller
 
     public function addPaymentTransaction(Request $request){
 
-        Log::info('Adding payment transaction', $request->all());
+        // Log::info('Adding payment transaction', $request->all());
         $validator = Validator::make($request->all(), [
             'customer_id' => 'required|exists:beat_customers,id',
             'amount' => 'required|numeric|min:0',
@@ -224,16 +224,33 @@ class BeatAppCustomer extends Controller
         ];
 
 
+        // $dataForEmail = [
+        //     'email' => $beatCustomer->email,
+        //     'subject' => 'Payment Receipt',
+        //     'amount' => $request->amount,
+        //     "start_date" => $beatCustomer->membership_end,
+        //     "new_expiration_date" => $request->new_expiration_date,
+        //     "transaction_id" => $transactionId,
+        //     "Plan Type" => $membershipTypeDetails,
+        //     "payment_method" => $request->payment_method,
+        // ];
+
+
         $dataForEmail = [
-            'email' => $beatCustomer->email,
-            'subject' => 'Payment Receipt',
-            'amount' => $request->amount,
-            "start_date" => $beatCustomer->membership_end,
-            "new_expiration_date" => $request->new_expiration_date,
-            "transaction_id" => $transactionId,
-            "Plan Type" => $membershipTypeDetails,
-            "payment_method" => $request->payment_method,
+            'totalAmount' => $request->amount,
+            'membershipStartDate' => $beatCustomer->membership_start,
+            'membershipEndDate' => $request->new_expiration_date,
+            'transactionId' => $transactionId,
+            'paymentMethod' => $request->payment_method,
+            'membershipPlan' => $membershipTypeDetails
         ];
+
+        // Render receipts.blade.php with the data to produce the email body
+        $EmailBody = view('emails.receipts', $dataForEmail)->render();
+
+        
+        SendEmailJob::dispatchSync($beatCustomer->email, 'Payment Receipt', $EmailBody);
+
 
         $this->addAndActivatePrivilege($beatCustomer->keypab, $beatCustomer->membership_start, $beatCustomer->membership_end);
 
@@ -302,7 +319,7 @@ class BeatAppCustomer extends Controller
 
         $customer->is_frozen = false;
         $customer->save();
-
+        $this->addAndActivatePrivilege($customer->keypab, $customer->membership_start, $customer->membership_end);
         return response()->json([
             'success' => true,
             'message' => 'Membership successfully unfrozen.'
@@ -319,6 +336,7 @@ class BeatAppCustomer extends Controller
         $customer->is_terminated = true;
         $customer->status = 0; // Set status to inactive
         $customer->save();
+        FreezeMembershipJob::dispatch($customer->keypab);
 
         return response()->json([
             'success' => true,

@@ -28,7 +28,7 @@ class EmailManagementController extends Controller
         $validatedData = Validator::make($request->all(), [
             'email' => 'required|string|email|max:255',
             'password' => 'required|string|max:255',
-            'filepath' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            
         ]);
         if ($validatedData->fails()) {
             return response()->json([
@@ -38,12 +38,7 @@ class EmailManagementController extends Controller
             ], 422);
         }
 
-        if ($request->hasFile('filepath')) {    
-            $file = $request->file('filepath');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $filePath = $file->storeAs('email', $filename, 'public');
-            $request->merge(['filepath' => '/storage/' . $filePath]);
-        }
+       
 
 
 
@@ -53,7 +48,7 @@ class EmailManagementController extends Controller
             $emailManagement->update([
                 'email' => $request->input('email'),
                 'password' => $request->input('password'),
-                'filepath' => $request->input('filepath'),
+                
                 
             ]);
         } else {
@@ -61,7 +56,6 @@ class EmailManagementController extends Controller
             $emailManagement = EmailManagement::create([
                 'email' => $request->input('email'),
                 'password' => $request->input('password'),
-                'filepath' => $request->input('filepath'),
             ]);
         }
     }
