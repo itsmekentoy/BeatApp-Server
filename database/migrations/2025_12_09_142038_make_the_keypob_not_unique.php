@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('last_tapp_key_pobs', function (Blueprint $table) {
-            $table->dropUnique('last_tapp_key_pobs_keyfob_number_unique');
+            $table->dropUnique('keyfob_number');
         });
     }
 
