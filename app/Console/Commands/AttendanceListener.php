@@ -85,7 +85,7 @@ class AttendanceListener extends Command
                 $last = lastTappKeyPob::create([
                     'keyfob_number' => $cardNumber,
                 ]);
-                $customer = BeatCustomer::where('keyfob_number', $cardNumber)->first();
+                $customer = BeatCustomer::where('keyfob', $cardNumber)->first();
                 if (!$customer) {
                     Log::warning("⚠️ Unrecognized Card #{$cardNumber} at {$dateNow} from Controller SN: {$sn} (IP: {$from})");
                     continue;
