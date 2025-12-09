@@ -5,6 +5,8 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use App\Models\lastTappKeyPob;
+use App\Models\BeatCustomer;
+use App\Models\BeatAttendanceMonitoring;
 
 class AttendanceListener extends Command
 {
@@ -83,6 +85,14 @@ class AttendanceListener extends Command
                 $last = lastTappKeyPob::create([
                     'keyfob_number' => $cardNumber,
                 ]);
+                $customer = BeatCustomer::where('keyfob_number', $cardNumber)->first();
+                Log::info('Starting attendance monitoring for keyfob: ' . $keypab);
+                $attendance = BeatAttendanceMonitoring::create([
+                    'beat_customer_id' => $customerID->id,
+                    'attendance_date' => Carbon::now('Asia/Manila')->toDateString(),
+                    'check_in_time' => Carbon::now('Asia/Manila')->toTimeString(),
+                ]);
+
 
                 Log::info("🎫 Attendance Scan Received", $data);
 
