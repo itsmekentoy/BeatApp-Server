@@ -79,8 +79,8 @@ class DoorAccessController extends Controller
     }
     public function OpenDoor(Request $request)
     {
-        $ipAddress = $request->input('ip_address');
-        $sn = $request->input('sn');
+        $ipAddress = env('IP_DOOR_CONTROLLER');
+        $sn = env('SN_DOOR_CONTROLLER');
 
         $doorNo = $request->input('door_no', 1); // Default to door 1
 
