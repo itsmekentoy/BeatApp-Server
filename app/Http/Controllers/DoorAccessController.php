@@ -8,6 +8,7 @@ use App\Models\BeatAttendanceMonitoring;
 use App\Models\BeatCustomer;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
+use App\Models\lastTappKeyPob;
 
 class DoorAccessController extends Controller
 {
@@ -134,66 +135,80 @@ class DoorAccessController extends Controller
     }
      public function listen()
     {
-        $port = 60000;
-        $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 
-        if ($socket === false) {
-            return response()->json(['error' => 'Failed to create socket'], 500);
-        }
-
-        if (!@socket_bind($socket, '0.0.0.0', $port)) {
-            return response()->json(['error' => 'Failed to bind socket to port ' . $port], 500);
-        }
-
-        // Set a short timeout so API won’t hang forever
-        socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, ['sec' => 5, 'usec' => 0]);
-
-        $buf = '';
-        $from = '';
-        $portOut = 0;
-
-        $bytes = @socket_recvfrom($socket, $buf, 1024, 0, $from, $portOut);
-        socket_close($socket);
-
-        if ($bytes <= 0) {
-            return response()->json(['message' => 'No data received'], 408);
-        }
-
-        $rawHex = bin2hex($buf);
-
-        // --- Decode packet ---
-        $snHex = substr($rawHex, 8, 8);
-        $sn = hexdec(implode('', array_reverse(str_split($snHex, 2))));
-
-        $cardHex = substr($rawHex, 32, 8);
-        $cardNumber = hexdec(implode('', array_reverse(str_split($cardHex, 2))));
-
-        $dateHex = substr($rawHex, 40, 8);
-        $year = hexdec(substr($dateHex, 0, 2)) + 2000;
-        $month = hexdec(substr($dateHex, 2, 2));
-        $day = hexdec(substr($dateHex, 4, 2));
-
-        $timeHex = substr($rawHex, 48, 6);
-        $hour = hexdec(substr($timeHex, 0, 2));
-        $minute = hexdec(substr($timeHex, 2, 2));
-        $second = hexdec(substr($timeHex, 4, 2));
-
-        $timestamp = sprintf('%04d-%02d-%02d %02d:%02d:%02d', $year, $month, $day, $hour, $minute, $second);
-
+        //get the last lastTappKeyPob 
+        $lastKeyFob = lastTappKeyPob::latest()->first();
+        $lastKeyFobNumber = $lastKeyFob ? $lastKeyFob->keyfob_number : 0;
         $data = [
-            'from' => $from,
-            'controller_sn' => $sn,
-            'card_number' => $cardNumber,
-            'timestamp' => $timestamp,
-            'raw_hex' => $rawHex,
+            'card_number' => $lastKeyFobNumber,
         ];
-
         Log::info('🎫 Access controller card scan received', $data);
 
         return response()->json([
             'status' => 'success',
             'data' => $data,
         ]);
+
+        // $port = 60000;
+        // $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+
+        // if ($socket === false) {
+        //     return response()->json(['error' => 'Failed to create socket'], 500);
+        // }
+
+        // if (!@socket_bind($socket, '0.0.0.0', $port)) {
+        //     return response()->json(['error' => 'Failed to bind socket to port ' . $port], 500);
+        // }
+
+        // // Set a short timeout so API won’t hang forever
+        // socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, ['sec' => 5, 'usec' => 0]);
+
+        // $buf = '';
+        // $from = '';
+        // $portOut = 0;
+
+        // $bytes = @socket_recvfrom($socket, $buf, 1024, 0, $from, $portOut);
+        // socket_close($socket);
+
+        // if ($bytes <= 0) {
+        //     return response()->json(['message' => 'No data received'], 408);
+        // }
+
+        // $rawHex = bin2hex($buf);
+
+        // // --- Decode packet ---
+        // $snHex = substr($rawHex, 8, 8);
+        // $sn = hexdec(implode('', array_reverse(str_split($snHex, 2))));
+
+        // $cardHex = substr($rawHex, 32, 8);
+        // $cardNumber = hexdec(implode('', array_reverse(str_split($cardHex, 2))));
+
+        // $dateHex = substr($rawHex, 40, 8);
+        // $year = hexdec(substr($dateHex, 0, 2)) + 2000;
+        // $month = hexdec(substr($dateHex, 2, 2));
+        // $day = hexdec(substr($dateHex, 4, 2));
+
+        // $timeHex = substr($rawHex, 48, 6);
+        // $hour = hexdec(substr($timeHex, 0, 2));
+        // $minute = hexdec(substr($timeHex, 2, 2));
+        // $second = hexdec(substr($timeHex, 4, 2));
+
+        // $timestamp = sprintf('%04d-%02d-%02d %02d:%02d:%02d', $year, $month, $day, $hour, $minute, $second);
+
+        // $data = [
+        //     'from' => $from,
+        //     'controller_sn' => $sn,
+        //     'card_number' => $cardNumber,
+        //     'timestamp' => $timestamp,
+        //     'raw_hex' => $rawHex,
+        // ];
+
+        // Log::info('🎫 Access controller card scan received', $data);
+
+        // return response()->json([
+        //     'status' => 'success',
+        //     'data' => $data,
+        // ]);
     }
 
     public function CustomerCheckIn($keyFob)
