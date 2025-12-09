@@ -90,7 +90,7 @@ class AttendanceListener extends Command
                     Log::warning("⚠️ Unrecognized Card #{$cardNumber} at {$dateNow} from Controller SN: {$sn} (IP: {$from})");
                     continue;
                 }
-                Log::info('Starting attendance monitoring for keyfob: ' . $keypab);
+                Log::info('Starting attendance monitoring for keyfob: ' . $cardNumber);
                 $attendance = BeatAttendanceMonitoring::create([
                     'beat_customer_id' => $customerID->id,
                     'attendance_date' => Carbon::now('Asia/Manila')->toDateString(),
