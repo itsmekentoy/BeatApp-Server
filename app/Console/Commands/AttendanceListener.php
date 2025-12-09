@@ -86,6 +86,10 @@ class AttendanceListener extends Command
                     'keyfob_number' => $cardNumber,
                 ]);
                 $customer = BeatCustomer::where('keyfob_number', $cardNumber)->first();
+                if (!$customer) {
+                    Log::warning("⚠️ Unrecognized Card #{$cardNumber} at {$dateNow} from Controller SN: {$sn} (IP: {$from})");
+                    continue;
+                }
                 Log::info('Starting attendance monitoring for keyfob: ' . $keypab);
                 $attendance = BeatAttendanceMonitoring::create([
                     'beat_customer_id' => $customerID->id,
