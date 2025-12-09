@@ -355,8 +355,8 @@ class KeyfobController extends Controller
 
     public function deletePrivilege(Request $request)
 {
-    $ip = env('IP_DOOR_CONTROLLER');
-    $sn = (int)env('SN_DOOR_CONTROLLER');
+    $ip = $this->defaultIp;
+    $sn = $this->defaultSn;
     $cardNo = $request->input('card_number');         // Card number to delete
     $port = 60000;
 
