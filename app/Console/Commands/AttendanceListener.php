@@ -92,7 +92,7 @@ class AttendanceListener extends Command
                 }
                 Log::info('Starting attendance monitoring for keyfob: ' . $cardNumber);
                 $attendance = BeatAttendanceMonitoring::create([
-                    'beat_customer_id' => $customerID->id,
+                    'beat_customer_id' => $customer->id,
                     'attendance_date' => Carbon::now('Asia/Manila')->toDateString(),
                     'check_in_time' => Carbon::now('Asia/Manila')->toTimeString(),
                 ]);
