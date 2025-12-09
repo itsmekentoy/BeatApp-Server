@@ -360,6 +360,10 @@ class KeyfobController extends Controller
     $cardNo = $request->input('card_number');         // Card number to delete
     $port = 60000;
 
+    Log::info(
+        'Deleting card privilege',
+        ['ip' => $ip, 'sn' => $sn, 'card_number' => $cardNo]
+    );
     // --- Build 64-byte UDP packet ---
     $packet = str_repeat("\x00", 64);
     $packet[0] = chr(0x17); // Type
