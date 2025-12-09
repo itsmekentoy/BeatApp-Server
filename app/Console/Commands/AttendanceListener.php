@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\lastTappKeyPob;
 use App\Models\BeatCustomer;
 use App\Models\BeatAttendanceMonitoring;
+use Carbon\Carbon;
 
 class AttendanceListener extends Command
 {
