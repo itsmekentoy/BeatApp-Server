@@ -78,10 +78,11 @@ class AttendanceListener extends Command
                     'timestamp'     => $timestamp,
                     'raw_hex'       => $rawHex,
                 ];
+                $dateNow = date('Y-m-d H:i:s');
 
                 Log::info("🎫 Attendance Scan Received", $data);
 
-                $this->info("Card #{$cardNumber} at {$timestamp}");
+                $this->info("Card #{$cardNumber} at {$dateNow} from Controller SN: {$sn} (IP: {$from})");
             }
 
             usleep(100000); // 100ms
