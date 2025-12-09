@@ -12,7 +12,7 @@ class UdpAttendanceListener extends Command
 
     public function handle()
     {
-        $port = 6000;
+        $port = 60000;
         $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 
         if ($socket === false) {
