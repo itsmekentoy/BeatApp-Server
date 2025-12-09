@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use App\Models\lastTappKeyPob;
 
 class AttendanceListener extends Command
 {
@@ -79,8 +80,13 @@ class AttendanceListener extends Command
                     'raw_hex'       => $rawHex,
                 ];
                 $dateNow = date('Y-m-d H:i:s');
+                $last = lastTappKeyPob::create([
+                    'keyfob_number' => $cardNumber,
+                ]);
 
                 Log::info("🎫 Attendance Scan Received", $data);
+
+
 
                 $this->info("Card #{$cardNumber} at {$dateNow} from Controller SN: {$sn} (IP: {$from})");
             }
