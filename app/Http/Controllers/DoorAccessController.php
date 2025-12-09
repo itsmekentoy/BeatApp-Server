@@ -237,9 +237,9 @@ class DoorAccessController extends Controller
 
     public function SetControllerTime(Request $request)
 {
-    $ip = '192.168.1.10';
-    $sn = 222455417;
-    $port = 60000;
+    $ip = env('IP_DOOR_CONTROLLER');
+    $sn = env('SN_DOOR_CONTROLLER');
+    $port = env('DOOR_CONTROLLER_PORT', 60000);
 
     // Asia/Manila time
     date_default_timezone_set('Asia/Manila');

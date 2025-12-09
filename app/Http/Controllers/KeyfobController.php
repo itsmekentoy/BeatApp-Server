@@ -8,9 +8,16 @@ use Carbon\Carbon;
 class KeyfobController extends Controller
 {
     // --- Change these defaults if you need to test other controllers ---
-    private string $defaultIp = '192.168.1.10';
-    private int $defaultSn = 222455417;
-    private int $port = 60000;
+    private string $defaultIp;
+    private int $defaultSn;
+    private int $port;
+
+    public function __construct()
+    {
+        $this->defaultIp = env('KEYFOB_DEFAULT_IP', '192.168.1.10');
+        $this->defaultSn = (int)env('KEYFOB_DEFAULT_SN', 222455417);
+        $this->port = (int)env('KEYFOB_PORT', 60000);
+    }
 
     /**
      * Helper: convert a decimal value to BCD-like single byte (same as GetHex in C# sample)
