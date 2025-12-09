@@ -14,8 +14,8 @@ class KeyfobController extends Controller
 
     public function __construct()
     {
-        $this->defaultIp = env('KEYFOB_DEFAULT_IP', '192.168.1.10');
-        $this->defaultSn = (int)env('KEYFOB_DEFAULT_SN', 222455417);
+        $this->defaultIp = env('IP_DOOR_CONTROLLER');
+        $this->defaultSn = (int)env('SN_DOOR_CONTROLLER');
         $this->port = (int)env('KEYFOB_PORT', 60000);
     }
 
