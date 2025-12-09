@@ -355,8 +355,8 @@ class KeyfobController extends Controller
 
     public function deletePrivilege(Request $request)
 {
-    $ip = '192.168.1.10';      // Controller IP
-    $sn = 222455417;           // Controller Serial Number
+    $ip = env('IP_DOOR_CONTROLLER');
+    $sn = (int)env('SN_DOOR_CONTROLLER');
     $cardNo = $request->input('card_number');         // Card number to delete
     $port = 60000;
 
@@ -417,8 +417,8 @@ class KeyfobController extends Controller
 }
 public function downloadAllPrivileges()
 {
-    $ip = '192.168.1.10';
-    $sn = 222455417;
+    $ip = env('IP_DOOR_CONTROLLER');
+    $sn = (int)env('SN_DOOR_CONTROLLER');
     $port = 60000;
 
     $results = [];
