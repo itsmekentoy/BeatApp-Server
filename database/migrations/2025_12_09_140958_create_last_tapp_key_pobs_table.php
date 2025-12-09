@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('last_tapp_key_pobs', function (Blueprint $table) {
             $table->id();
-            $table->string('keyfob_number')->unique();
+            $table->string('keyfob_number')->nullable();
             $table->timestamps();
         });
     }
