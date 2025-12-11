@@ -137,7 +137,7 @@ class DoorAccessController extends Controller
     {
 
         //get the last lastTappKeyPob 
-        $lastKeyFob = lastTappKeyPob::latest()->first();
+        $lastKeyFob = lastTappKeyPob::latest('created_at')->first();
         $lastKeyFobNumber = $lastKeyFob ? $lastKeyFob->keyfob_number : 0;
         $data = [
             'card_number' => $lastKeyFobNumber,
